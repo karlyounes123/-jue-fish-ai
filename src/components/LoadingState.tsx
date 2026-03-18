@@ -50,7 +50,7 @@ export default function LoadingState() {
           <path
             strokeLinecap="round"
             d="M12 3a9 9 0 019 9"
-            strokeLinecap="round"
+        
           />
         </svg>
         <p className="text-sm text-[var(--color-muted)] font-medium">
