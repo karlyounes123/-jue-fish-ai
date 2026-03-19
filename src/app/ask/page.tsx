@@ -1,224 +1,451 @@
-// ============================================================
-// src/app/ask/page.tsx — Main AI tool page
-// ============================================================
+"use client";
 
-import type { Metadata } from "next";
-import StainForm from "@/components/StainForm";
-import Link from "next/link";
-import Image from "next/image";
-export const metadata: Metadata = {
-  title: "Ask Jue Fish AI — Free Stain Removal Advisor",
-  description:
-    "Upload a photo of your stain and get expert removal instructions in seconds. Powered by AI, trusted by Jue Fish.",
-};
+import { useState } from "react";
+import ImageUploader from "@/components/ImageUploader";
+import ResultCard from "@/components/ResultCard";
+import LoadingState from "@/components/LoadingState";
+import type { StainAnalysisResult } from "@/types";
+import { MATERIALS, STAIN_AGES } from "@/types";
 
-const SHOP_URL =
-  process.env.NEXT_PUBLIC_SHOP_URL ||
-  "https://your-store.com/products/stain-remover";
+type FormState = "idle" | "loading" | "success" | "error";
 
-export default function AskPage() {
+export default function StainForm() {
+  const [imageBase64, setImageBase64] = useState<string | null>(null);
+  const [imageMimeType, setImageMimeType] = useState<string | null>(null);
+  const [description, setDescription] = useState("");
+  const [material, setMaterial] = useState("");
+  const [stainAge, setStainAge] = useState("");
+  const [formState, setFormState] = useState<FormState>("idle");
+  const [result, setResult] = useState<StainAnalysisResult | null>(null);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const handleImageSelect = (_file: File, base64: string, mime: string) => {
+    setImageBase64(base64);
+    setImageMimeType(mime);
+    clearFieldError("image");
+  };
+
+  const handleImageError = (msg: string) => {
+    setImageBase64(null);
+    setImageMimeType(null);
+    setFieldErrors((prev) => ({ ...prev, image: msg }));
+  };
+
+  const clearFieldError = (field: string) => {
+    setFieldErrors((prev) => { const n = { ...prev }; delete n[field]; return n; });
+  };
+
+  const validate = () => {
+    const errors: Record<string, string> = {};
+    if (!imageBase64) errors.image = "Please upload a photo of the stain.";
+    if (!material) errors.material = "Please select the fabric or material.";
+    if (!stainAge) errors.stainAge = "Please select how old the stain is.";
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+    setFormState("loading");
+    setResult(null);
+    setErrorMessage("");
+    try {
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64, imageMimeType, description: description.trim(), material, stainAge }),
+      });
+      const json = await response.json();
+      if (!json.success) throw new Error(json.error || "Analysis failed.");
+      setResult(json.data);
+      setFormState("success");
+      setTimeout(() => {
+        document.getElementById("jf-result")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Something went wrong.");
+      setFormState("error");
+    }
+  };
+
+  const handleReset = () => {
+    setFormState("idle");
+    setResult(null);
+    setErrorMessage("");
+    setImageBase64(null);
+    setImageMimeType(null);
+    setDescription("");
+    setMaterial("");
+    setStainAge("");
+    setFieldErrors({});
+  };
+
+  const isLoading = formState === "loading";
+
   return (
-    <div className="min-h-screen relative">
-      {/* Background decoration */}
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 overflow-hidden"
-      >
-        <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-brand-200/30 blur-3xl" />
-        <div className="absolute top-1/2 -left-32 w-72 h-72 rounded-full bg-sage/20 blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-64 h-64 rounded-full bg-brand-100/40 blur-3xl" />
-      </div>
+    <div className="jf-stain-form">
+      <style>{`
+        .jf-stain-form { display: flex; flex-direction: column; gap: 0; }
 
-      <div className="relative z-10">
-        {/* ── Nav ── */}
-        <nav className="border-b border-[var(--color-border)]/60 bg-cream/80 backdrop-blur-sm sticky top-0 z-50">
-          <div className="max-w-6xl mx-auto px-5 sm:px-8 py-4 flex items-center justify-between">
-            <Link href="/" className="font-display font-bold text-xl text-ink tracking-tight">
-              <Image src="/logo end.png" alt="Jue Fish" width={150} height={36} className="object-contain" />
-            </Link>
-            <a
-              href={SHOP_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="
-                text-sm font-semibold px-4 py-2 rounded-lg
-                bg-brand-600 text-white hover:bg-brand-700
-                transition-colors duration-150
-              "
+        .jf-field { margin-bottom: 16px; }
+
+        .jf-label {
+          display: block;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: rgba(245,240,232,0.45);
+          margin-bottom: 8px;
+        }
+
+        .jf-upload-box {
+          border: 1.5px dashed rgba(255,255,255,0.15);
+          border-radius: 16px;
+          padding: 32px 20px;
+          text-align: center;
+          cursor: pointer;
+          transition: all 0.2s;
+          background: rgba(255,255,255,0.03);
+        }
+        .jf-upload-box:hover {
+          border-color: #7c3aed;
+          background: rgba(124,58,237,0.08);
+        }
+        .jf-upload-icon { font-size: 32px; margin-bottom: 10px; }
+        .jf-upload-text { font-size: 14px; font-weight: 600; color: #f5f0e8; }
+        .jf-upload-hint { font-size: 12px; color: rgba(245,240,232,0.35); margin-top: 4px; }
+
+        .jf-preview {
+          border-radius: 16px;
+          overflow: hidden;
+          border: 1px solid rgba(255,255,255,0.1);
+          position: relative;
+        }
+        .jf-preview img { width: 100%; height: 200px; object-fit: cover; display: block; }
+        .jf-preview-bar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 10px 14px;
+          background: rgba(255,255,255,0.05);
+          font-size: 12px;
+        }
+        .jf-remove-btn {
+          background: none;
+          border: none;
+          color: #f87171;
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          padding: 0;
+        }
+
+        .jf-textarea {
+          width: 100%;
+          background: rgba(255,255,255,0.05);
+          border: 1.5px solid rgba(255,255,255,0.1);
+          border-radius: 14px;
+          padding: 14px 16px;
+          color: #f5f0e8;
+          font-size: 14px;
+          font-family: inherit;
+          resize: none;
+          outline: none;
+          transition: border-color 0.2s;
+        }
+        .jf-textarea:focus { border-color: #7c3aed; }
+        .jf-textarea::placeholder { color: rgba(245,240,232,0.25); }
+
+        .jf-select-wrap { position: relative; }
+        .jf-select {
+          width: 100%;
+          background: rgba(255,255,255,0.05);
+          border: 1.5px solid rgba(255,255,255,0.1);
+          border-radius: 14px;
+          padding: 14px 40px 14px 16px;
+          color: #f5f0e8;
+          font-size: 14px;
+          font-family: inherit;
+          appearance: none;
+          outline: none;
+          cursor: pointer;
+          transition: border-color 0.2s;
+        }
+        .jf-select:focus { border-color: #7c3aed; }
+        .jf-select option { background: #1a1a1a; }
+        .jf-select-arrow {
+          position: absolute;
+          right: 14px;
+          top: 50%;
+          transform: translateY(-50%);
+          pointer-events: none;
+          color: rgba(245,240,232,0.4);
+          font-size: 12px;
+        }
+
+        .jf-field-error {
+          font-size: 11px;
+          color: #f87171;
+          margin-top: 6px;
+          font-weight: 600;
+        }
+
+        .jf-submit-btn {
+          width: 100%;
+          padding: 16px;
+          background: #7c3aed;
+          color: white;
+          border: none;
+          border-radius: 14px;
+          font-size: 15px;
+          font-weight: 700;
+          font-family: inherit;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          transition: all 0.15s;
+          margin-top: 8px;
+          letter-spacing: 0.02em;
+        }
+        .jf-submit-btn:hover { background: #6d28d9; }
+        .jf-submit-btn:active { transform: scale(0.98); }
+        .jf-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .jf-error-box {
+          background: rgba(239,68,68,0.1);
+          border: 1px solid rgba(239,68,68,0.3);
+          border-radius: 14px;
+          padding: 16px;
+          margin-top: 12px;
+          font-size: 13px;
+          color: #fca5a5;
+        }
+        .jf-error-retry {
+          background: none;
+          border: none;
+          color: #f87171;
+          font-weight: 700;
+          cursor: pointer;
+          text-decoration: underline;
+          font-size: 12px;
+          margin-top: 6px;
+          display: block;
+          padding: 0;
+        }
+
+        .jf-result-wrap {
+          margin-top: 24px;
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 20px;
+          padding: 24px 20px;
+        }
+
+        .jf-reset-btn {
+          background: none;
+          border: none;
+          color: rgba(245,240,232,0.4);
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          margin-top: 20px;
+          padding: 0;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .jf-reset-btn:hover { color: rgba(245,240,232,0.7); }
+
+        .jf-loading-wrap {
+          margin-top: 24px;
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 20px;
+          padding: 24px 20px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .jf-spinner {
+          width: 18px; height: 18px;
+          border: 2px solid rgba(255,255,255,0.3);
+          border-top-color: white;
+          border-radius: 50%;
+          animation: spin 0.7s linear infinite;
+        }
+      `}</style>
+
+      <form onSubmit={handleSubmit} noValidate>
+        {/* Image Upload */}
+        <div className="jf-field">
+          <label className="jf-label">Stain Photo *</label>
+          <JFImageUploader
+            onSelect={handleImageSelect}
+            onError={handleImageError}
+            disabled={isLoading}
+          />
+          {fieldErrors.image && <p className="jf-field-error">{fieldErrors.image}</p>}
+        </div>
+
+        {/* Description */}
+        <div className="jf-field">
+          <label className="jf-label">Describe the stain <span style={{fontWeight:400, textTransform:'none', letterSpacing:0}}>(optional)</span></label>
+          <textarea
+            className="jf-textarea"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            disabled={isLoading}
+            maxLength={500}
+            rows={2}
+            placeholder="e.g. Red wine on my shirt, happened last night..."
+          />
+        </div>
+
+        {/* Material */}
+        <div className="jf-field">
+          <label className="jf-label">Fabric / Material *</label>
+          <div className="jf-select-wrap">
+            <select
+              className="jf-select"
+              value={material}
+              onChange={(e) => { setMaterial(e.target.value); clearFieldError("material"); }}
+              disabled={isLoading}
             >
-              Shop Now
-            </a>
+              <option value="" disabled>Select material…</option>
+              {MATERIALS.map((m) => <option key={m} value={m}>{m}</option>)}
+            </select>
+            <span className="jf-select-arrow">▼</span>
           </div>
-        </nav>
+          {fieldErrors.material && <p className="jf-field-error">{fieldErrors.material}</p>}
+        </div>
 
-        {/* ── Hero ── */}
-        <header className="max-w-6xl mx-auto px-5 sm:px-8 pt-14 pb-10">
-          <div className="max-w-xl animate-fade-up">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-100 border border-brand-200 mb-5">
-              <span className="w-2 h-2 rounded-full bg-brand-500 animate-pulse" />
-              <span className="text-xs font-semibold text-brand-700 uppercase tracking-wider">
-                AI-powered • Free to use
-              </span>
-            </div>
-            <h1 className="font-display text-4xl sm:text-5xl font-bold text-ink leading-tight">
-              Ask Jue Fish{" "}
-              <span className="text-brand-600 italic">AI</span>
-            </h1>
-            <p className="mt-4 text-base sm:text-lg text-[var(--color-muted)] leading-relaxed">
-              Upload a photo of your stain, tell us about the fabric, and get
-              personalised step-by-step removal instructions — powered by AI,
-              trusted by Jue Fish.
-            </p>
-
-            <div className="mt-5 flex flex-wrap gap-3">
-              {["🍷 Wine", "☕ Coffee", "🩸 Blood", "🌿 Grass", "🐾 Pet stains"].map(
-                (tag) => (
-                  <span
-                    key={tag}
-                    className="text-xs font-medium px-3 py-1.5 rounded-full bg-white/60 border border-[var(--color-border)] text-ink/70"
-                  >
-                    {tag}
-                  </span>
-                )
-              )}
-            </div>
+        {/* Stain Age */}
+        <div className="jf-field">
+          <label className="jf-label">How old is the stain? *</label>
+          <div className="jf-select-wrap">
+            <select
+              className="jf-select"
+              value={stainAge}
+              onChange={(e) => { setStainAge(e.target.value); clearFieldError("stainAge"); }}
+              disabled={isLoading}
+            >
+              <option value="" disabled>Select age…</option>
+              {STAIN_AGES.map((a) => <option key={a} value={a}>{a}</option>)}
+            </select>
+            <span className="jf-select-arrow">▼</span>
           </div>
-        </header>
+          {fieldErrors.stainAge && <p className="jf-field-error">{fieldErrors.stainAge}</p>}
+        </div>
 
-        {/* ── Form + Result ── */}
-        <main className="max-w-6xl mx-auto px-5 sm:px-8 pb-16">
-          <StainForm />
-        </main>
+        {/* Submit */}
+        <button type="submit" className="jf-submit-btn" disabled={isLoading}>
+          {isLoading ? (
+            <><div className="jf-spinner" /> Analysing stain…</>
+          ) : (
+            <>✦ Analyse My Stain</>
+          )}
+        </button>
 
-        {/* ── How it works ── */}
-        <section className="bg-white/40 border-t border-[var(--color-border)] py-16">
-          <div className="max-w-6xl mx-auto px-5 sm:px-8">
-            <div className="text-center mb-10">
-              <h2 className="font-display text-3xl font-bold text-ink">
-                How it works
-              </h2>
-              <p className="text-[var(--color-muted)] mt-2">
-                Get expert stain advice in under 30 seconds.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              {[
-                {
-                  icon: "📷",
-                  step: "01",
-                  title: "Upload a photo",
-                  desc: "Take a clear photo of the stain. The closer the better — our AI needs to see it clearly.",
-                },
-                {
-                  icon: "📝",
-                  step: "02",
-                  title: "Answer 3 questions",
-                  desc: "Tell us the fabric type, how old the stain is, and optionally describe what caused it.",
-                },
-                {
-                  icon: "✨",
-                  step: "03",
-                  title: "Get your answer",
-                  desc: "Receive a personalised removal guide with step-by-step instructions and product tips.",
-                },
-              ].map((item) => (
-                <div
-                  key={item.step}
-                  className="rounded-2xl bg-white/60 border border-[var(--color-border)] p-6 relative overflow-hidden"
-                >
-                  <span className="absolute top-4 right-5 font-display text-5xl font-bold text-[var(--color-border)] select-none">
-                    {item.step}
-                  </span>
-                  <div className="text-3xl mb-3">{item.icon}</div>
-                  <h3 className="font-semibold text-ink text-base mb-2">
-                    {item.title}
-                  </h3>
-                  <p className="text-sm text-[var(--color-muted)] leading-relaxed">
-                    {item.desc}
-                  </p>
-                </div>
-              ))}
-            </div>
+        {formState === "error" && (
+          <div className="jf-error-box">
+            <strong>Failed:</strong> {errorMessage}
+            <button type="button" className="jf-error-retry" onClick={handleReset}>Try again</button>
           </div>
-        </section>
+        )}
+      </form>
 
-        {/* ── Tips section ── */}
-        <section className="py-16 max-w-6xl mx-auto px-5 sm:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-            <div>
-              <h2 className="font-display text-3xl font-bold text-ink mb-4">
-                Best results start fast
-              </h2>
-              <p className="text-[var(--color-muted)] leading-relaxed mb-4">
-                The sooner you treat a stain, the better your chances of full
-                removal. Fresh stains haven't had time to bond with fabric
-                fibres — giving Jue Fish Stain Remover the best possible
-                conditions to work.
-              </p>
-              <ul className="space-y-2">
-                {[
-                  "Act within the first 30 minutes for best results",
-                  "Blot — never rub — to avoid spreading",
-                  "Cold water, not hot, for protein-based stains",
-                  "Always patch test on delicate or coloured fabrics",
-                ].map((tip) => (
-                  <li key={tip} className="flex gap-2 text-sm text-ink/80">
-                    <span className="text-brand-600 mt-0.5">✓</span>
-                    {tip}
-                  </li>
-                ))}
-              </ul>
-            </div>
+      {/* Loading */}
+      {formState === "loading" && (
+        <div className="jf-loading-wrap">
+          <LoadingState />
+        </div>
+      )}
 
-            {/* Product callout */}
-            <div className="rounded-2xl bg-ink text-cream p-7 relative overflow-hidden">
-              <div
-                aria-hidden
-                className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-brand-600/20"
-              />
-              <div
-                aria-hidden
-                className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full bg-brand-600/10"
-              />
-              <div className="relative">
-                <p className="text-xs font-semibold uppercase tracking-widest text-cream/50 mb-2">
-                  Pair with
-                </p>
-                <h3 className="font-display text-2xl font-bold mb-3">
-                  Jue Fish Stain Remover
-                </h3>
-                <p className="text-sm text-cream/70 leading-relaxed mb-5">
-                  Enzyme-based formula. Colour-safe. Works on over 30 stain types
-                  — from food and wine to pet accidents and grass.
-                </p>
-                <a
-                  href={SHOP_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="
-                    inline-flex items-center gap-2 px-5 py-2.5 rounded-xl
-                    bg-brand-400 text-ink font-bold text-sm
-                    hover:bg-brand-300 transition-colors active:scale-95
-                  "
-                >
-                  Shop Now →
-                </a>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ── Footer ── */}
-        <footer className="border-t border-[var(--color-border)] py-8">
-          <div className="max-w-6xl mx-auto px-5 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-[var(--color-muted)]">
-            <p>© {new Date().getFullYear()} Jue Fish. All rights reserved.</p>
-            <p className="text-xs">
-              AI advice is guidance only. Results may vary. Always patch test first.
-            </p>
-          </div>
-        </footer>
-      </div>
+      {/* Result */}
+      {formState === "success" && result && (
+        <div className="jf-result-wrap" id="jf-result">
+          <ResultCard result={result} />
+          <button type="button" className="jf-reset-btn" onClick={handleReset}>
+            ↺ Analyse another stain
+          </button>
+        </div>
+      )}
     </div>
+  );
+}
+
+// Inline image uploader for dark theme
+function JFImageUploader({ onSelect, onError, disabled }: {
+  onSelect: (file: File, base64: string, mime: string) => void;
+  onError: (msg: string) => void;
+  disabled?: boolean;
+}) {
+  const [preview, setPreview] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const inputRef = useState<HTMLInputElement | null>(null);
+
+  const processFile = (file: File) => {
+    const accepted = ["image/jpeg", "image/png", "image/webp"];
+    if (!accepted.includes(file.type)) { onError("Please upload JPG, PNG, or WebP."); return; }
+    if (file.size > 8 * 1024 * 1024) { onError("Max size is 8MB."); return; }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      setPreview(result);
+      setFileName(file.name);
+      onSelect(file, result.split(",")[1], file.type);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file) processFile(file);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) processFile(file);
+    e.target.value = "";
+  };
+
+  const handleClear = () => { setPreview(null); setFileName(null); };
+
+  if (preview) {
+    return (
+      <div className="jf-preview">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={preview} alt="Stain preview" />
+        <div className="jf-preview-bar">
+          <span style={{fontSize:12, color:'rgba(245,240,232,0.5)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:200}}>{fileName}</span>
+          <button type="button" className="jf-remove-btn" onClick={handleClear} disabled={disabled}>Remove</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <label
+      className="jf-upload-box"
+      onDrop={handleDrop}
+      onDragOver={(e) => e.preventDefault()}
+      style={disabled ? {opacity:0.5, cursor:'not-allowed'} : {}}
+    >
+      <input
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        onChange={handleChange}
+        disabled={disabled}
+        style={{display:'none'}}
+      />
+      <div className="jf-upload-icon">📷</div>
+      <p className="jf-upload-text">Upload a stain photo</p>
+      <p className="jf-upload-hint">JPG, PNG, WebP · max 8MB · drag & drop or tap</p>
+    </label>
   );
 }
