@@ -14,13 +14,7 @@ export default function AskPage() {
   return (
     <div style={{minHeight:"100vh", background:"#f7f4ee", fontFamily:"var(--font-body)"}}>
       {/* Nav */}
-      <nav style={{borderBottom:"1px solid #d4d0c8", background:"rgba(247,244,238,0.9)", padding:"14px 20px", display:"flex", alignItems:"center", justifyContent:"space-between"}}>
-        <Image src="/logo end.png" alt="Jue Fish" width={130} height={32} style={{objectFit:"contain"}} />
-        <a href={SHOP_URL} target="_blank" rel="noopener noreferrer" style={{background:"#7c3aed", color:"white", padding:"8px 18px", borderRadius:"10px", fontSize:"13px", fontWeight:700, textDecoration:"none"}}>
-          Shop Now
-        </a>
-      </nav>
-
+      
       {/* Hero */}
       <div style={{maxWidth:600, margin:"0 auto", padding:"40px 20px 20px", textAlign:"center"}}>
         <div style={{display:"inline-flex", alignItems:"center", gap:6, background:"#ede9fe", border:"1px solid #ddd6fe", borderRadius:100, padding:"6px 14px", marginBottom:16}}>
