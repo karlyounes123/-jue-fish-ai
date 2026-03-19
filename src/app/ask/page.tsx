@@ -5,7 +5,7 @@
 import type { Metadata } from "next";
 import StainForm from "@/components/StainForm";
 import Link from "next/link";
-
+import Image from "next/image";
 export const metadata: Metadata = {
   title: "Ask Jue Fish AI — Free Stain Removal Advisor",
   description:
@@ -34,7 +34,7 @@ export default function AskPage() {
         <nav className="border-b border-[var(--color-border)]/60 bg-cream/80 backdrop-blur-sm sticky top-0 z-50">
           <div className="max-w-6xl mx-auto px-5 sm:px-8 py-4 flex items-center justify-between">
             <Link href="/" className="font-display font-bold text-xl text-ink tracking-tight">
-              Jue Fish<span className="text-brand-600">.</span>
+              <Image src="/logo end.png" alt="Jue Fish" width={150} height={36} className="object-contain" />
             </Link>
             <a
               href={SHOP_URL}
