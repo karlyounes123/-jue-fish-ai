@@ -4,6 +4,7 @@
 
 import type { Metadata } from "next";
 import { Playfair_Display, DM_Sans } from "next/font/google";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -37,7 +38,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${playfair.variable} ${dmSans.variable}`}>
-      <body className="font-body bg-cream text-ink antialiased">{children}</body>
+      <body className="font-body bg-cream text-ink antialiased">
+        {children}
+        <SpeedInsights />
+      </body>
     </html>
   );
 }
