@@ -23,12 +23,17 @@ export const metadata: Metadata = {
   description:
     "Upload a photo of your stain and get personalised step-by-step removal instructions powered by AI. Jue Fish Stain Remover helps with food, drink, pet stains and more.",
   openGraph: {
-    title: "Ask Jue Fish AI — Stain Removal Assistant",
-    description:
-      "Get expert stain removal advice in seconds. Upload a photo and let AI identify your stain.",
-    type: "website",
-  },
-};
+  title: "Ask Jue Fish AI — Free Stain Removal",
+  description: "Upload a stain photo → get expert removal steps in seconds.",
+  type: "website",
+  images: [
+    {
+      url: "https://jue-fish-ai-5f8y.vercel.app/og-image.jpg",
+      width: 1200,
+      height: 630,
+    }
+  ],
+},
 
 export default function RootLayout({
   children,
