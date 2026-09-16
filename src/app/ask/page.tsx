@@ -3,8 +3,8 @@ import StainForm from "@/components/StainForm";
 import Image from "next/image";
 
 export const metadata: Metadata = {
-  title: "Ask Jue Fish AI — Stain Removal Expert",
-  description: "Upload a photo of your stain and get expert removal instructions in seconds.",
+  title: "Ask Jue Fish AI — Cleaning Advice in Seconds",
+  description: "Stains, mould, washing machine smells, grease and rust. Describe the problem and get a step-by-step plan plus the product that fixes it.",
 };
 
 const SHOP_URL = process.env.NEXT_PUBLIC_SHOP_URL || "https://juefishcleaning.com";
@@ -37,14 +37,14 @@ export default function AskPage() {
           </h1>
 
           <p style={{fontSize:15, color:"rgba(255,255,255,0.7)", lineHeight:1.7, marginBottom:36, maxWidth:420, margin:"0 auto 36px"}}>
-            Upload a photo of your stain. Our AI analyses the fabric, identifies the stain type, and gives you a step-by-step removal plan.
+            Stains, mould, washing machine smells, grease and rust. Describe the problem — add a photo if you have one — and get a step-by-step plan plus the Jue-Fish product that fixes it.
           </p>
 
           {/* Stats */}
           <div style={{display:"inline-flex", gap:0, background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:14, overflow:"hidden", marginBottom:32}}>
             {[
-              {num:"30+", label:"Stain types"},
-              {num:"~10s", label:"Analysis time"},
+              {num:"4", label:"Problem types"},
+              {num:"~10s", label:"Answer time"},
               {num:"100%", label:"Free"},
             ].map((s, i) => (
               <div key={s.label} style={{padding:"14px 20px", textAlign:"center", borderRight: i < 2 ? "1px solid rgba(255,255,255,0.15)" : "none"}}>
@@ -56,7 +56,7 @@ export default function AskPage() {
 
           {/* Trust row */}
           <div style={{display:"flex", flexWrap:"wrap" as const, justifyContent:"center", gap:8}}>
-            {["🔒 Photos never saved", "✦ AI-powered results", "🌍 Trusted across GCC"].map(t => (
+            {["🔒 Photos never saved", "✦ AI-powered results", "🇱🇧 Made for Lebanese homes"].map(t => (
               <span key={t} style={{fontSize:12, padding:"5px 14px", borderRadius:100, background:"rgba(255,255,255,0.12)", border:"1px solid rgba(255,255,255,0.2)", color:"rgba(255,255,255,0.8)", fontWeight:500}}>{t}</span>
             ))}
           </div>
@@ -87,7 +87,7 @@ export default function AskPage() {
           <p style={{fontSize:11, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase" as const, color:"#7c3aed", textAlign:"center", marginBottom:20}}>How it works</p>
           <div style={{display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12}}>
             {[
-              {icon:"📷", step:"01", title:"Upload photo", desc:"Take a clear photo of the stain"},
+              {icon:"📝", step:"01", title:"Describe it", desc:"Tell us the problem, photo optional"},
               {icon:"🧠", step:"02", title:"AI analyses", desc:"We identify stain type & fabric"},
               {icon:"✨", step:"03", title:"Get steps", desc:"Personalised removal instructions"},
             ].map((item) => (
