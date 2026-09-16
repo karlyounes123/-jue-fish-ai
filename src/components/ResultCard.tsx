@@ -4,11 +4,14 @@
 
 "use client";
 
-import type { StainAnalysisResult, Confidence } from "@/types";
+import type { CleaningAnalysisResult, Confidence } from "@/types";
+import { findProduct } from "@/types";
 
-const SHOP_URL =
-  process.env.NEXT_PUBLIC_SHOP_URL ||
-  "https://your-store.com/products/stain-remover";
+// The store root. Product paths come from the shared catalogue, so a missing
+// env var can no longer send shoppers to a placeholder domain.
+const STORE_ROOT = (
+  process.env.NEXT_PUBLIC_SHOP_URL || "https://juefishcleaning.com"
+).replace(/\/+$/, "");
 
 const confidenceConfig: Record<
   Confidence,
@@ -20,11 +23,22 @@ const confidenceConfig: Record<
 };
 
 interface ResultCardProps {
-  result: StainAnalysisResult;
+  result: CleaningAnalysisResult;
 }
 
 export default function ResultCard({ result }: ResultCardProps) {
   const conf = confidenceConfig[result.confidence] ?? confidenceConfig.low;
+
+  const primary = result.recommended_product
+    ? findProduct(result.recommended_product.handle)
+    : undefined;
+  const secondary = result.also_consider
+    ? findProduct(result.also_consider.handle)
+    : undefined;
+
+  const primaryUrl = primary
+    ? `${STORE_ROOT}${primary.path}`
+    : `${STORE_ROOT}/collections/all-products`;
 
   return (
     <div className="animate-fade-up space-y-5">
@@ -32,10 +46,10 @@ export default function ResultCard({ result }: ResultCardProps) {
       <div className="flex items-start justify-between gap-4 pb-4 border-b border-[var(--color-border)]">
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-[var(--color-muted)] mb-1">
-            Likely stain type
+            What we think this is
           </p>
           <h2 className="font-display text-2xl sm:text-3xl font-bold text-ink leading-tight">
-            {result.stain_guess}
+            {result.problem_guess}
           </h2>
         </div>
         <span
@@ -59,8 +73,10 @@ export default function ResultCard({ result }: ResultCardProps) {
         <div>
           <p className="font-semibold text-sm">
             {result.can_jue_fish_help
-              ? "Jue Fish Stain Remover can help"
-              : "Limited effectiveness expected"}
+              ? primary
+                ? `${primary.name} can help`
+                : "Jue Fish can help"
+              : "Jue Fish isn't the right fix for this"}
           </p>
           <p className="text-sm text-[var(--color-muted)] mt-1 leading-relaxed">
             {result.reasoning_summary}
@@ -72,7 +88,7 @@ export default function ResultCard({ result }: ResultCardProps) {
       {result.steps.length > 0 && (
         <div>
           <h3 className="font-semibold text-sm uppercase tracking-widest text-[var(--color-muted)] mb-3">
-            How to remove it
+            What to do
           </h3>
           <ol className="space-y-3">
             {result.steps.map((step, i) => (
@@ -124,31 +140,66 @@ export default function ResultCard({ result }: ResultCardProps) {
         </div>
       )}
 
-      {/* CTA */}
-      <div className="rounded-2xl bg-ink text-cream p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4">
-        <div className="flex-1">
-          <p className="font-display text-xl font-bold leading-snug">
-            Ready to treat this stain?
-          </p>
-          <p className="text-sm text-cream/70 mt-1">{result.cta}</p>
+      {/* CTA — links to the product the AI actually chose */}
+      {result.can_jue_fish_help && (
+        <div className="rounded-2xl bg-ink text-cream p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex-1">
+            <p className="font-display text-xl font-bold leading-snug">
+              {primary ? primary.name : "Ready to fix this?"}
+            </p>
+            {primary && (
+              <p className="text-xs font-semibold text-brand-300 mt-1">
+                {primary.price} · Cash on delivery across Lebanon
+              </p>
+            )}
+            <p className="text-sm text-cream/70 mt-2">
+              {result.recommended_product?.why || result.cta}
+            </p>
+          </div>
+          <a
+            href={primaryUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="
+              shrink-0 inline-flex items-center justify-center gap-2
+              px-6 py-3 rounded-xl font-bold text-sm
+              bg-brand-400 text-ink hover:bg-brand-300
+              transition-all duration-150 active:scale-95 whitespace-nowrap
+            "
+          >
+            {primary ? "View product" : "Shop Jue Fish"}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+            </svg>
+          </a>
         </div>
+      )}
+
+      {/* Secondary suggestion — usually a bundle when more than one problem applies */}
+      {secondary && (
         <a
-          href={SHOP_URL}
+          href={`${STORE_ROOT}${secondary.path}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="
-            shrink-0 inline-flex items-center justify-center gap-2
-            px-6 py-3 rounded-xl font-bold text-sm
-            bg-brand-400 text-ink hover:bg-brand-300
-            transition-all duration-150 active:scale-95 whitespace-nowrap
-          "
+          className="flex items-center gap-3 rounded-xl border border-[var(--color-border)] bg-white/60 p-4 hover:border-brand-300 transition-colors"
         >
-          Shop Jue Fish
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <span className="text-xl shrink-0">📦</span>
+          <div className="flex-1">
+            <p className="font-semibold text-sm text-ink">
+              Also worth a look: {secondary.name}{" "}
+              <span className="text-[var(--color-muted)] font-normal">
+                — {secondary.price}
+              </span>
+            </p>
+            <p className="text-sm text-[var(--color-muted)] mt-0.5 leading-relaxed">
+              {result.also_consider?.why || secondary.blurb}
+            </p>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 text-[var(--color-muted)]">
             <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
           </svg>
         </a>
-      </div>
+      )}
     </div>
   );
 }

@@ -19,21 +19,16 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Ask Jue Fish AI — Stain Removal Assistant",
+  title: "Ask Jue Fish AI — Cleaning Advice in Seconds",
   description:
-    "Upload a photo of your stain and get personalised step-by-step removal instructions powered by AI. Jue Fish Stain Remover helps with food, drink, pet stains and more.",
+    "Describe a stain, mould, a smelly washing machine or burnt-on grease and get step-by-step instructions plus the right Jue-Fish product. Free to use.",
   openGraph: {
-  title: "Ask Jue Fish AI — Free Stain Removal",
-  description: "Upload a stain photo → get expert removal steps in seconds.",
-  type: "website",
-  images: [
-    {
-      url: "https://jue-fish-ai-5f8y.vercel.app/og-image.jpg",
-      width: 1200,
-      height: 630,
-    }
-  ],
-},
+    title: "Ask Jue Fish AI — Free Cleaning Advice",
+    description:
+      "Tell us the problem, get a step-by-step plan and the product that fixes it. Stains, mould, washing machines, grease and rust.",
+    type: "website",
+  },
+};
 
 export default function RootLayout({
   children,
